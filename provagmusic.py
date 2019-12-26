@@ -1,11 +1,15 @@
 from gmusicapi import Mobileclient
 from gmusicapi import Webclient
 import json
+import yaml
+
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
+
 mc = Mobileclient()
 #mc.perform_oauth()
 
-
-mc.oauth_login(device_id="36d23bfa893d28bd")
+mc.oauth_login(device_id=cfg['provagmusic']['device_id'])
 
 #"7f30ce56-a743-3326-88ff-8a6d94d9c111"
 #songs = mc.get_all_songs()
