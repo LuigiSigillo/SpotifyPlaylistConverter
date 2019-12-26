@@ -98,3 +98,5 @@ fabric.properties
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
+.cache-
+.cache-1172837782
