@@ -17,7 +17,6 @@ mc.oauth_login(device_id=cfg['provagmusic']['device_id'])
 
 '''with open('data.json', 'w', encoding="utf-8") as fp:
     json.dump(songs, fp, sort_keys=True, indent=4,ensure_ascii=False)
-    print("CI SIAMO?")
 '''
 with open('data.json', 'r', encoding="utf-8") as fp:
     data = json.load(fp)
@@ -45,10 +44,6 @@ def write_playlists(songs):
         
 
 write_playlists(data)
-
-
-
-
 
 def get_songs_of_playlist(playlist_name):
     playlists = mc.get_all_user_playlist_contents()
