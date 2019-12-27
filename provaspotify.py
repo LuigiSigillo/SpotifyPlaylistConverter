@@ -5,7 +5,7 @@ import json
 
 def init():
     with open("config.yml", 'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
+        cfg = yaml.safe_load(ymlfile)
     scope = 'playlist-modify-public'
     username = cfg['provaspotify']['username']
     token = util.prompt_for_user_token(
@@ -51,9 +51,7 @@ def create_query(song):
     
 
 def convert_playlist(sp,data):
-    lists = [[] for x in range(1+int(len(data)/100))]
-    print(len(lists))
-    strange = []
+    lists,strange = [],[]
     i = 0
     for song in data:
         q,song_artists = create_query(song)
@@ -70,23 +68,18 @@ def convert_playlist(sp,data):
                 strange.append(song)
                 break
             if artists[0] == song_artists[0]:
-                if len(lists[i])<100:
-                    lists[i].append(id_song)
-                else:
-                    i = i+1
-                    lists[i].append(id_song)     
+                lists.append(id_song)
+                break 
         if len(results) == 0 or len(results) == j-1:
             strange.append(song)
     return lists,strange     
 
 
 sp,username = init()
-playlist_id = "3bsUtCAc2aCEznvairzfny" #sp.user_playlist_create(username, "Zona Trap ITA", public=True)['id']
-data = get_data("./playlists/Zona Trap ITA.json")
-print(playlist_id)
-songs_lists,not_added = convert_playlist(sp,data)
-write_data("strange.json",not_added)
-print(len(songs_lists))
-for l in songs_lists:
-    print(len(l))
-    sp.user_playlist_add_tracks(username, playlist_id, l)
+playlist_id = sp.user_playlist_create(username, "Indie", public=True)['id']
+data = get_data("./playlists/Indie.json")
+songs_list,not_added = convert_playlist(sp,data)
+write_data("strangeTrapITA.json",not_added)
+while songs_list: 
+    sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
+    songs_list = songs_list[100:]
