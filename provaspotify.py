@@ -34,27 +34,31 @@ def create_query(song):
     artists = song['artist'].split(",")
     if "/" in song['artist']:
         artists = song['artist'].split("/")
+    if ";" in song['artist']:
+        artists = song['artist'].split(";")
     artist = artists[0]
     q = song['title']
-    for a in artists:
-        q = q.replace(a,"")
-    q = q + " " + artist
     if ".mp3" in song['title']:
-        q = song['title'][:-4] + " " + artist
-    q = q.replace("ft","")
-    q = q.replace("feat.","")
-    print(q)
-    return q
+        q = song['title'][:-4]
+    for a in artists[1:]:
+        q = q.replace(a,"")
+    if not artist in q:
+        q = q + " " + artist
+  
+    #q = q.replace("ft","")
+    #q = q.replace("feat.","")
+    return q,artists
     
 
 def convert_playlist(sp,data):
-    lists = [[] for x in range(1 + int(len(data)/100))]
+    lists = [[] for x in range(1+int(len(data)/100))]
+    print(len(lists))
     strange = []
-    i = 1
+    i = 0
     for song in data:
-        q = create_query(song)
-        results = sp.search(q, limit=5, offset=0, type='track')
-        for item in results['tracks']['items']:
+        q,song_artists = create_query(song)
+        results = sp.search(q, limit=3, offset=0, type='track')['tracks']['items']
+        for j,item in enumerate(results):
             album_url = item['album']['images'][0]['url']
             album_name = item['album']['name']
             artists = []
@@ -65,20 +69,24 @@ def convert_playlist(sp,data):
             if "Originally" in song_title or "Karaoke" in artists[0]:
                 strange.append(song)
                 break
-            if len(lists[i-1])<100*i:
-                lists[i-1].append(id_song)
-            else:
-                i = i+1
-                lists[i-1].append(id_song)
-            break
-        if len(results) == 0:
+            if artists[0] == song_artists[0]:
+                if len(lists[i])<100:
+                    lists[i].append(id_song)
+                else:
+                    i = i+1
+                    lists[i].append(id_song)     
+        if len(results) == 0 or len(results) == j-1:
             strange.append(song)
     return lists,strange     
 
 
 sp,username = init()
-data = get_data("./playlists/Zona Trap USA.json")
+playlist_id = "3bsUtCAc2aCEznvairzfny" #sp.user_playlist_create(username, "Zona Trap ITA", public=True)['id']
+data = get_data("./playlists/Zona Trap ITA.json")
+print(playlist_id)
 songs_lists,not_added = convert_playlist(sp,data)
 write_data("strange.json",not_added)
+print(len(songs_lists))
 for l in songs_lists:
-    sp.user_playlist_add_tracks(username, "45qpRfTlvYUPqW6LnUfrMa", l)
+    print(len(l))
+    sp.user_playlist_add_tracks(username, playlist_id, l)
