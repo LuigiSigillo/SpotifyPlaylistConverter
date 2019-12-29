@@ -2,6 +2,7 @@ import spotipy
 import spotipy.util as util
 import yaml
 import json
+from termcolor import colored
 
 def init():
     with open("config.yml", 'r') as ymlfile:
@@ -52,7 +53,6 @@ def create_query(song):
 
 def convert_playlist(sp,data):
     lists,strange = [],[]
-    i = 0
     for song in data:
         q,song_artists = create_query(song)
         results = sp.search(q, limit=3, offset=0, type='track')['tracks']['items']
@@ -70,16 +70,62 @@ def convert_playlist(sp,data):
             if artists[0] == song_artists[0]:
                 lists.append(id_song)
                 break 
-        if len(results) == 0 or len(results) == j-1:
+        if len(results) == 0 or len(results) == j+1:
             strange.append(song)
     return lists,strange     
 
+def add_over_100_songs(songs_list,username,playlist_id):
+    while songs_list: 
+        sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
+        songs_list = songs_list[100:]
+
+
+def manual_add(sp,data):
+    lists,not_added = [],[]
+    for song in data:
+        manual = False
+        non_serve,song_artists = create_query(song)
+        print(colored(json.dumps(song, indent=4),"cyan"))
+        q = input("\n Write the search:\n")
+        results = sp.search(q, limit=5, offset=0, type='track')['tracks']['items']
+        for j,item in enumerate(results):
+            album_url = item['album']['images'][0]['url']
+            album_name = item['album']['name']
+            artists = []
+            for a in item['artists']:
+                artists.append(a['name'])
+            id_song = item['id']
+            song_title = item['name']
+            if manual:
+                print (song_title,artists,album_name)
+                if input("Is this one ? \n") == 'y':
+                    lists.append(id_song)
+                    print(colored("added","green"))
+                    break
+                else:
+                    continue
+            if artists[0] == song_artists[0]:
+                lists.append(id_song)
+                print(colored("added","green"))
+                break
+            else:
+                manual = True
+        if len(results) == 0 or len(results) == j+1:
+            print(colored("this song is unaddable :(","red"), song)
+            not_added.append(song)
+    return lists,not_added
 
 sp,username = init()
-playlist_id = sp.user_playlist_create(username, "Indie", public=True)['id']
-data = get_data("./playlists/Indie.json")
+playlist_name = input("Insert playlist name to convert:\n")
+playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
+data = get_data("./playlists/"+playlist_name+".json")
+
 songs_list,not_added = convert_playlist(sp,data)
-write_data("strangeTrapITA.json",not_added)
-while songs_list: 
-    sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
-    songs_list = songs_list[100:]
+write_data("strange"+playlist_name+".json", not_added)
+add_over_100_songs(songs_list,username,playlist_id)
+
+answ = input(str(len(not_added)) + " tracks not found, would you try to add them manually?")
+if answ=="y":
+    songs_list,def_not_added = manual_add(sp,not_added)
+    add_over_100_songs(songs_list,username,playlist_id)
+    print(def_not_added)
