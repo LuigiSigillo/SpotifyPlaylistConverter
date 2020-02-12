@@ -184,8 +184,7 @@ if answ == "y":
     songs_list,def_not_added = partial_add(sp,not_added)
     add_over_100_songs(songs_list,username,playlist_id)
 
-
-answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually?")
-if answ == "y":
-    songs_list,defi_not_added = manual_add(sp,def_not_added)
-    add_over_100_songs(songs_list,username,playlist_id)
+    answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually?")
+    if answ == "y":
+        songs_list,defi_not_added = manual_add(sp,def_not_added)
+        add_over_100_songs(songs_list,username,playlist_id)
