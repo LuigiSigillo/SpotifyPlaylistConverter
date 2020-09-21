@@ -56,24 +56,25 @@ def create_query(song):
 def convert_playlist(sp,data):
     lists,strange = [],[]
     for song in data:
-        q,song_artists = create_query(song)
-        results = sp.search(q, limit=3, offset=0, type='track')['tracks']['items']
-        for j,item in enumerate(results):
-            album_url = item['album']['images'][0]['url']
-            album_name = item['album']['name']
-            artists = []
-            for a in item['artists']:
-                artists.append(a['name'])
-            id_song = item['id']
-            song_title = item['name']
-            if "Originally" in song_title or "Karaoke" in artists[0]:
+        if song != None:
+            q,song_artists = create_query(song)
+            results = sp.search(q, limit=3, offset=0, type='track')['tracks']['items']
+            for j,item in enumerate(results):
+                album_url = item['album']['images'][0]['url']
+                album_name = item['album']['name']
+                artists = []
+                for a in item['artists']:
+                    artists.append(a['name'])
+                id_song = item['id']
+                song_title = item['name']
+                if "Originally" in song_title or "Karaoke" in artists[0]:
+                    strange.append(song)
+                    break
+                if artists[0] == song_artists[0]:
+                    lists.append(id_song)
+                    break 
+            if len(results) == 0 or len(results) == j+1:
                 strange.append(song)
-                break
-            if artists[0] == song_artists[0]:
-                lists.append(id_song)
-                break 
-        if len(results) == 0 or len(results) == j+1:
-            strange.append(song)
     return lists,strange     
 
 def add_over_100_songs(songs_list,username,playlist_id):
@@ -146,8 +147,11 @@ def partial_add(sp,data):
         if song['id'] in my_dict and len(my_dict[song['id']]) == 0:
             not_added.append(song)
             del my_dict[song['id']]
-    a,b = manual_add_precomputed(my_dict)
-    return lists + a, not_added + b
+    if input("Last chanche to add " + str(len(not_added))+" songs manually ") == "y":
+        a,b = manual_add_precomputed(my_dict)
+        return lists + a, not_added + b
+    else:
+        return lists, not_added
 
 def manual_add_precomputed(results):
     lists,not_added = [],[]
@@ -170,21 +174,29 @@ def manual_add_precomputed(results):
 
 sp,username = init()
 
+import glob, os
+parent_dir = 'playlists'
+for file in glob.glob(os.path.join('./playlists', '*.json')):
+    name = file.strip("./playlists\\")
+    print (name.strip(".json"))
+
 playlist_name = input("Insert playlist name to convert:\n")
 playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
 data = get_data("./playlists/"+playlist_name+".json")
-
 songs_list,not_added = convert_playlist(sp,data)
-write_data("strange"+playlist_name+".json", not_added)
 add_over_100_songs(songs_list,username,playlist_id)
 print(len(not_added))
 
-answ = input(str(len(not_added)) + " tracks not found, would you try to add them manually?")
+answ = input(str(len(not_added)) + " tracks not found, would you like to try again? ")
 if answ == "y":
     songs_list,def_not_added = partial_add(sp,not_added)
     add_over_100_songs(songs_list,username,playlist_id)
+    write_data("not added "+playlist_name+".json", def_not_added)
 
-    answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually?")
+    answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually? ")
     if answ == "y":
         songs_list,defi_not_added = manual_add(sp,def_not_added)
         add_over_100_songs(songs_list,username,playlist_id)
+        write_data("not added "+playlist_name+".json", defi_not_added)
+else:
+    write_data("not added "+playlist_name+".json", not_added)
