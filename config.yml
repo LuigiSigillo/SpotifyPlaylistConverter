@@ -1,0 +1,8 @@
+gmusic:
+  device_id: 123456
+  logged: False
+spotify:
+  username: "123456"
+  client_id: 123456abcdf12345qwerty
+  client_secret: 123456abcdf12345qwerty
+  playlist_id: 123456abcdf12345qwerty
