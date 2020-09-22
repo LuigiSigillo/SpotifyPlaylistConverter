@@ -2,18 +2,19 @@ import spotipy
 import spotipy.util as util
 import yaml
 import json
+import glob, os
 from termcolor import colored
 
 def init():
     with open("config.yml", 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     scope = 'playlist-modify-public'
-    username = cfg['provaspotify']['username']
+    username = cfg['spotify']['username']
     token = util.prompt_for_user_token(
         username,
         scope,
-        client_id=cfg['provaspotify']['client_id'],
-        client_secret=cfg['provaspotify']['client_secret'],
+        client_id=cfg['spotify']['client_id'],
+        client_secret=cfg['spotify']['client_secret'],
         redirect_uri='http://localhost:5500'
         )
     if token:
@@ -147,7 +148,7 @@ def partial_add(sp,data):
         if song['id'] in my_dict and len(my_dict[song['id']]) == 0:
             not_added.append(song)
             del my_dict[song['id']]
-    if input("Last chanche to add " + str(len(not_added))+" songs manually ") == "y":
+    if input("I can search the songs for you and you choose if it is correct. Remainig songs = " + str(len(not_added))+" ") == "y":
         a,b = manual_add_precomputed(my_dict)
         return lists + a, not_added + b
     else:
@@ -172,31 +173,37 @@ def manual_add_precomputed(results):
     return lists,not_added
 
 
-sp,username = init()
-
-import glob, os
-parent_dir = 'playlists'
-for file in glob.glob(os.path.join('./playlists', '*.json')):
-    name = file.strip("./playlists\\")
-    print (name.strip(".json"))
-
-playlist_name = input("Insert playlist name to convert:\n")
-playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
-data = get_data("./playlists/"+playlist_name+".json")
-songs_list,not_added = convert_playlist(sp,data)
-add_over_100_songs(songs_list,username,playlist_id)
-print(len(not_added))
-
-answ = input(str(len(not_added)) + " tracks not found, would you like to try again? ")
-if answ == "y":
-    songs_list,def_not_added = partial_add(sp,not_added)
-    add_over_100_songs(songs_list,username,playlist_id)
-    write_data("not added "+playlist_name+".json", def_not_added)
-
-    answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually? ")
-    if answ == "y":
-        songs_list,defi_not_added = manual_add(sp,def_not_added)
-        add_over_100_songs(songs_list,username,playlist_id)
-        write_data("not added "+playlist_name+".json", defi_not_added)
-else:
+def add_songs_and_write_not_added_file(songs_list, not_added):
+    add_over_100_songs(list(dict.fromkeys(songs_list)),username,playlist_id)
     write_data("not added "+playlist_name+".json", not_added)
+
+def print_playlists():
+    parent_dir = 'playlists'
+    for file in glob.glob(os.path.join('./playlists', '*.json')):
+        name = file.strip("./playlists\\")
+        print (name.strip(".json"))
+
+
+
+
+if __name__ == "__main__":
+    sp,username = init()
+    print_playlists()
+    playlist_name = input("Insert playlist name to convert:\n")
+    playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
+    data = get_data("./playlists/"+playlist_name+".json")
+
+    fst_songs_list,not_added = convert_playlist(sp,data)
+
+    answ = input(str(len(not_added)) + " tracks not found, would you like to try again (MODE AUTO)? ")
+
+    if answ == "y":
+        snd_songs_list,def_not_added = partial_add(sp,not_added)
+        answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually? (Like a normal research on spotify) ")
+        if answ == "y":
+            trd_songs_list,defi_not_added = manual_add(sp,def_not_added)
+            add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list + trd_songs_list,defi_not_added)
+        else:
+            add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list,def_not_added)
+    else:
+        add_songs_and_write_not_added_file(fst_songs_list,not_added)

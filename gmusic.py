@@ -34,15 +34,12 @@ def init():
     mc = Mobileclient()
     with open("config.yml") as ymlfile:
         cfg = yaml.load(ymlfile)
-        logged = cfg['provagmusic']['logged']
-        print(type(logged),logged)
-    
-    #if not logged:
-        '''cfg['provagmusic']['logged'] = True
-        with open("config.yml") as ymlfile:
-            yaml.dump(cfg,ymlfile)'''
     mc.perform_oauth()
-    mc.oauth_login(device_id=cfg['provagmusic']['device_id'])
+    try:
+        mc.oauth_login(device_id=cfg['gmusic']['device_id'])
+    except:
+        mc.oauth_login(123456)
+    
 
     #"7f30ce56-a743-3326-88ff-8a6d94d9c111"
     with open('./playlists/data.json', 'r', encoding="utf-8") as fp:
