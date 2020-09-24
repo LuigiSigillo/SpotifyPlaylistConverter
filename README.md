@@ -28,11 +28,23 @@ Unfortunately Google play music does not provide a method to see what are your d
     ```yml
     username: "12345678"
     ```
+### General configuration
+
+Execute the command to install the required packages:
+```
+pip install -r requirements.txt
+```
 
 ## How to use
 
 The first operation has to be done only the first time, and if and only if we update some of the playlists on Google Play Music.
 
 1. Launch the gmusic.py script and follow the instructions to past correctly the oauth token
+```
+python gmusic.py
+```
 
 2. Launch the spotify.py script and insert the name of the playlist you want to convert. You will be asked to use differently method of research. Answer using "y" as yes and "n" as no.
+```
+python spotify.py
+```

@@ -76,13 +76,60 @@ def convert_playlist(sp,data):
                     break 
             if len(results) == 0 or len(results) == j+1:
                 strange.append(song)
-    return lists,strange     
+    added,not_added = partial_add(sp, strange)
+    return lists + added, not_added  
 
-def add_over_100_songs(songs_list,username,playlist_id):
-    while songs_list: 
-        sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
-        songs_list = songs_list[100:]
 
+def partial_add(sp,data):
+    lists,not_added = [],[]
+    my_dict = {}
+    for song in data:
+        my_dict[song['id']] = []
+        q,song_artists = create_query(song)
+        #print(colored(json.dumps(song, indent=4),"cyan"))
+        results = sp.search(q, limit=5, offset=0, type='track')['tracks']['items']
+        for j,item in enumerate(results):
+            album_url = item['album']['images'][0]['url']
+            album_name = item['album']['name']
+            artists = []
+            for a in item['artists']:
+                artists.append(a['name'])
+            id_song = item['id']
+            song_title = item['name']
+            if artists[0] == song_artists[0]:
+                lists.append(id_song)
+                #print(colored("added "+song_title,"green"))
+                del my_dict[song['id']]
+                break
+            else:
+                payload = { "original_info": song, "title": song_title, "artists": artists, "album": album_name, "id": id_song }
+                my_dict[song['id']].append(payload)
+        if song['id'] in my_dict and len(my_dict[song['id']]) == 0:
+            not_added.append(song)
+            del my_dict[song['id']]
+    if input("I can search the songs for you and you choose if it is correct. Remainig songs = " + str(len(not_added))+" ") == "y":
+        a,b = manual_add_precomputed(my_dict)
+        return lists + a, b
+    else:
+        return lists, not_added
+
+def manual_add_precomputed(results):
+    lists,not_added = [],[]
+    for j,item in enumerate(results):
+        print(colored(
+            "\nTitle " + results[item][0]["original_info"]["title"]+
+            "\nArtists " + results[item][0]["original_info"]["artist"]+
+            "\nAlbum " + results[item][0]["original_info"]["album"]
+        ,"cyan"))
+        for i,e in enumerate(results[item]):
+            print ("Index = ",i,"\n\tTitle",e["title"],"\n\tArtists",e["artists"],"\n\tAlbum",e["album"])
+        idx = input("\nWhich index? (-1 if not present) \n")
+        if int(idx) >= 0:
+            lists.append(results[item][int(idx)]["id"])
+            print(colored("added {}".format(item[int(idx)]),"green"))
+        else:
+            not_added.append(results[item][0]["original_info"])
+    return lists,not_added
 
 def manual_add(sp,data):
     lists,not_added = [],[]
@@ -121,61 +168,19 @@ def manual_add(sp,data):
 
 
 
-def partial_add(sp,data):
-    lists,not_added = [],[]
-    my_dict = {}
-    for song in data:
-        my_dict[song['id']] = []
-        q,song_artists = create_query(song)
-        #print(colored(json.dumps(song, indent=4),"cyan"))
-        results = sp.search(q, limit=5, offset=0, type='track')['tracks']['items']
-        for j,item in enumerate(results):
-            album_url = item['album']['images'][0]['url']
-            album_name = item['album']['name']
-            artists = []
-            for a in item['artists']:
-                artists.append(a['name'])
-            id_song = item['id']
-            song_title = item['name']
-            if artists[0] == song_artists[0]:
-                lists.append(id_song)
-                print(colored("added","green"))
-                del my_dict[song['id']]
-                break
-            else:
-                payload = { "original_info": song, "title": song_title, "artists": artists, "album": album_name, "id": id_song }
-                my_dict[song['id']].append(payload)
-        if song['id'] in my_dict and len(my_dict[song['id']]) == 0:
-            not_added.append(song)
-            del my_dict[song['id']]
-    if input("I can search the songs for you and you choose if it is correct. Remainig songs = " + str(len(not_added))+" ") == "y":
-        a,b = manual_add_precomputed(my_dict)
-        return lists + a, not_added + b
-    else:
-        return lists, not_added
+def add_over_100_songs(songs_list,username,playlist_id):
+    while songs_list: 
+        sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
+        songs_list = songs_list[100:]
 
-def manual_add_precomputed(results):
-    lists,not_added = [],[]
-    for j,item in enumerate(results):
-        print(colored(
-            "\nTitle " + results[item][0]["original_info"]["title"]+
-            "\nArtists " + results[item][0]["original_info"]["artist"]+
-            "\nAlbum " + results[item][0]["original_info"]["album"]
-        ,"cyan"))
-        for i,e in enumerate(results[item]):
-            print ("Index = ",i,"\n\tTitle",e["title"],"\n\tArtists",e["artists"],"\n\tAlbum",e["album"])
-        idx = input("\nWhich index? (-1 if not present) \n")
-        if int(idx) >= 0:
-            lists.append(results[item][int(idx)]["id"])
-            print(colored("added {}".format(item[int(idx)]),"green"))
-        else:
-            not_added.append(results[item][0]["original_info"])
-    return lists,not_added
 
 
 def add_songs_and_write_not_added_file(songs_list, not_added):
     add_over_100_songs(list(dict.fromkeys(songs_list)),username,playlist_id)
     write_data("not added "+playlist_name+".json", not_added)
+    print("Not added these songs, you can find them inside this file: " +" not added "+playlist_name+".json")
+    for i,e in enumerate(not_added):
+        print ("Index = ",i,"\n\tTitle",e["title"],"\n\tArtists",e["artist"],"\n\tAlbum",e["album"])
 
 def print_playlists():
     parent_dir = 'playlists'
@@ -189,21 +194,18 @@ def print_playlists():
 if __name__ == "__main__":
     sp,username = init()
     print_playlists()
-    playlist_name = input("Insert playlist name to convert:\n")
+    playlist_name = input("When prompted answer using 'y' as yes and 'n' as no.\nInsert playlist name to convert:\n")
     playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
     data = get_data("./playlists/"+playlist_name+".json")
 
     fst_songs_list,not_added = convert_playlist(sp,data)
-
-    answ = input(str(len(not_added)) + " tracks not found, would you like to try again (MODE AUTO)? ")
-
-    if answ == "y":
-        snd_songs_list,def_not_added = partial_add(sp,not_added)
-        answ = input(str(len(def_not_added)) + " tracks very hard to find, would you try to find them manually? (Like a normal research on spotify) ")
+    if len(not_added) > 0:
+        answ = input(str(len(not_added)) + " tracks very hard to find, would you try to find them manually? (Like a normal research on spotify)\n Answer using 'y' as yes and 'n' as no. ")
+       
         if answ == "y":
-            trd_songs_list,defi_not_added = manual_add(sp,def_not_added)
-            add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list + trd_songs_list,defi_not_added)
-        else:
+            snd_songs_list,def_not_added = manual_add(sp,not_added)
             add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list,def_not_added)
-    else:
-        add_songs_and_write_not_added_file(fst_songs_list,not_added)
+        else:
+            add_songs_and_write_not_added_file(fst_songs_list,not_added)
+        
+    
