@@ -1,4 +1,5 @@
 *.json
+*.mp3
 config.yml
 ### PyCharm ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
@@ -100,3 +101,4 @@ fabric.properties
 .history
 .cache-
 .cache-1172837782
+config.yml

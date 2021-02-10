@@ -2,3 +2,4 @@ gmusicapi
 yaml
 spotipy
 termcolor
+ShazamAPI

@@ -51,9 +51,32 @@ def init():
     return data,mc
 
 
+
+
+import os
+
+def parse_data(rootdir="C:/Users/luigi/Music/Playlist"):
+    """
+    Parse all the files presents in the rootdir and its subdirectories
+    :param string:
+    :return: None 
+    """
+    lst = []
+    for subdir, dirs, files in os.walk(rootdir):
+        for file in files:
+            filename_fullpath = os.path.join(subdir, file)
+            print(file)
+    #write_json(lst,file+".json")
+
+
+
+
+
 if __name__ == "__main__":
-    data,mc = init()
-    write_playlists(data, mc)
+    #data,mc = init()
+    #write_playlists(data, mc)
+    parse_data()
+
 
 
 

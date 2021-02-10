@@ -26,7 +26,18 @@ def init():
 
 def get_data(filename):
     with open(filename, 'r', encoding="utf-8") as fp:
-        return json.load(fp)
+        data = json.load(fp)
+        for elem in data:
+            try:
+                a = elem['artist']
+            except:
+                elem['artist'] = ""
+            try:
+                a = elem['album']
+            except:
+                elem['album'] = ""
+    return data
+
 
 def write_data(filename,songs):
     with open(filename, 'w', encoding="utf-8") as fp:
@@ -61,7 +72,7 @@ def convert_playlist(sp,data):
             q,song_artists = create_query(song)
             results = sp.search(q, limit=3, offset=0, type='track')['tracks']['items']
             for j,item in enumerate(results):
-                album_url = item['album']['images'][0]['url']
+                #album_url = item['album']['images'][0]['url']
                 album_name = item['album']['name']
                 artists = []
                 for a in item['artists']:
@@ -89,7 +100,7 @@ def partial_add(sp,data):
         #print(colored(json.dumps(song, indent=4),"cyan"))
         results = sp.search(q, limit=5, offset=0, type='track')['tracks']['items']
         for j,item in enumerate(results):
-            album_url = item['album']['images'][0]['url']
+            #album_url = item['album']['images'][0]['url']
             album_name = item['album']['name']
             artists = []
             for a in item['artists']:
@@ -107,7 +118,7 @@ def partial_add(sp,data):
         if song['id'] in my_dict and len(my_dict[song['id']]) == 0:
             not_added.append(song)
             del my_dict[song['id']]
-    if input("I can search the songs for you and you choose if it is correct. Remainig songs = " + str(len(not_added))+" ") == "y":
+    if input("I can search the songs for you and you choose if it is correct.\n Remainig songs = " + str(len(not_added))+" ") == "y":
         a,b = manual_add_precomputed(my_dict)
         return lists + a, b
     else:
@@ -126,7 +137,10 @@ def manual_add_precomputed(results):
         idx = input("\nWhich index? (-1 if not present) \n")
         if int(idx) >= 0:
             lists.append(results[item][int(idx)]["id"])
-            print(colored("added {}".format(item[int(idx)]),"green"))
+            try:
+                print(colored("added {}".format(item[int(idx)]),"green"))
+            except:
+                continue
         else:
             not_added.append(results[item][0]["original_info"])
     return lists,not_added
@@ -140,7 +154,7 @@ def manual_add(sp,data):
         q = input("\n Write the search:\n")
         results = sp.search(q, limit=5, offset=0, type='track')['tracks']['items']
         for j,item in enumerate(results):
-            album_url = item['album']['images'][0]['url']
+            #album_url = item['album']['images'][0]['url']
             album_name = item['album']['name']
             artists = []
             for a in item['artists']:
@@ -177,31 +191,32 @@ def add_over_100_songs(songs_list,username,playlist_id):
 
 def add_songs_and_write_not_added_file(songs_list, not_added):
     add_over_100_songs(list(dict.fromkeys(songs_list)),username,playlist_id)
-    write_data("not added "+playlist_name+".json", not_added)
-    print("Not added these songs, you can find them inside this file: " +" not added "+playlist_name+".json")
+    write_data("not added/not_added_"+playlist_name+".json", not_added)
+    print("Not added these songs, you can find them inside this file: not added/not_added_"+playlist_name+".json")
     for i,e in enumerate(not_added):
-        print ("Index = ",i,"\n\tTitle",e["title"],"\n\tArtists",e["artist"],"\n\tAlbum",e["album"])
+        try:
+            print ("Index = ",i,"\n\tTitle",e["title"],"\n\tArtists",e["artist"],"\n\tAlbum",e["album"])
+        except:
+            continue
 
-def print_playlists():
-    parent_dir = 'playlists'
-    for file in glob.glob(os.path.join('./playlists', '*.json')):
+
+
+def print_playlists(parent_dir="./playlists"):
+    for file in glob.glob(os.path.join(parent_dir, '*.json')):
         name = file.strip("./playlists\\")
         print (name.strip(".json"))
 
 
 
-
-if __name__ == "__main__":
+def main():
     sp,username = init()
     print_playlists()
     playlist_name = input("When prompted answer using 'y' as yes and 'n' as no.\nInsert playlist name to convert:\n")
     playlist_id = sp.user_playlist_create(username, playlist_name, public=True)['id']
     data = get_data("./playlists/"+playlist_name+".json")
-
     fst_songs_list,not_added = convert_playlist(sp,data)
     if len(not_added) > 0:
         answ = input(str(len(not_added)) + " tracks very hard to find, would you try to find them manually? (Like a normal research on spotify)\n Answer using 'y' as yes and 'n' as no. ")
-       
         if answ == "y":
             snd_songs_list,def_not_added = manual_add(sp,not_added)
             add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list,def_not_added)
@@ -209,3 +224,6 @@ if __name__ == "__main__":
             add_songs_and_write_not_added_file(fst_songs_list,not_added)
         
     
+
+if __name__ == "__main__":
+    main()
