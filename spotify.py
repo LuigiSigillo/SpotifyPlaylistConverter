@@ -182,15 +182,15 @@ def manual_add(sp,data):
 
 
 
-def add_over_100_songs(songs_list,username,playlist_id):
+def add_over_100_songs(sp,songs_list,username,playlist_id):
     while songs_list: 
         sp.user_playlist_add_tracks(username, playlist_id, songs_list[:100])
         songs_list = songs_list[100:]
 
 
 
-def add_songs_and_write_not_added_file(songs_list, not_added):
-    add_over_100_songs(list(dict.fromkeys(songs_list)),username,playlist_id)
+def add_songs_and_write_not_added_file(sp,songs_list,username, not_added, playlist_id,playlist_name):
+    add_over_100_songs(sp,list(dict.fromkeys(songs_list)),username,playlist_id)
     write_data("not added/not_added_"+playlist_name+".json", not_added)
     print("Not added these songs, you can find them inside this file: not added/not_added_"+playlist_name+".json")
     for i,e in enumerate(not_added):
@@ -219,9 +219,9 @@ def main():
         answ = input(str(len(not_added)) + " tracks very hard to find, would you try to find them manually? (Like a normal research on spotify)\n Answer using 'y' as yes and 'n' as no. ")
         if answ == "y":
             snd_songs_list,def_not_added = manual_add(sp,not_added)
-            add_songs_and_write_not_added_file(fst_songs_list+snd_songs_list,def_not_added)
+            add_songs_and_write_not_added_file(sp,fst_songs_list+snd_songs_list,username,def_not_added,playlist_id,playlist_name)
         else:
-            add_songs_and_write_not_added_file(fst_songs_list,not_added)
+            add_songs_and_write_not_added_file(sp,fst_songs_list,username,not_added, playlist_id,playlist_name)
         
     
 
